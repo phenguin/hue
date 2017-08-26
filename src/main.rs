@@ -1,6 +1,10 @@
 extern crate pest;
+
 #[macro_use]
 extern crate pest_derive;
+
+#[macro_use]
+extern crate dump;
 
 use pest::Parser;
 
@@ -9,7 +13,7 @@ use pest::Parser;
 struct LispParser;
 
 fn main() {
-    let pairs = LispParser::parse_str(Rule::program, "a1 b2").unwrap_or_else(|e| panic!("{}", e));
+    let pairs = LispParser::parse_str(Rule::program, "(a b c)").unwrap_or_else(|e| panic!("{}", e));
 
     // Because ident_list is silent, the iterator will contain idents
     for pair in pairs {
@@ -18,13 +22,15 @@ fn main() {
         println!("Span:    {:?}", pair.clone().into_span());
         println!("Text:    {}", pair.clone().into_span().as_str());
 
-        // A pair can be converted to an iterator of the tokens which make it up:
-        for inner_pair in pair.into_inner() {
-            match inner_pair.as_rule() {
-                Rule::alpha => println!("Letter:  {}", inner_pair.into_span().as_str()),
-                Rule::digit => println!("Digit:   {}", inner_pair.into_span().as_str()), 
-                _ => unreachable!()
-            };
-        }
+
+        dump!(pair);
+
+        // // A pair can be converted to an iterator of the tokens which make it up:
+        // for inner_pair in pair.into_inner() {
+        //     match inner_pair.as_rule() {
+        //         Rule::ident => println!("Ident:  {:?}", inner_pair.into_span().as_str()),
+        //         _ => unreachable!()
+        //     };
+        // }
     }
 }
