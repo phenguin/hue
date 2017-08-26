@@ -1,4 +1,4 @@
-whitespace = _{ " " | "\t" | "\r" | "\n" }
+
 
 lparen = _{ "(" }
 rparen = _{ ")" }
@@ -32,4 +32,4 @@ expr = { ident | sexp | literal }
 
 sexp = { lparen ~ (ident | sexp) ~ expr* ~ rparen }
 
-program = { sexp* }
+program = { expr* }

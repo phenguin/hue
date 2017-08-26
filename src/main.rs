@@ -1,3 +1,4 @@
+#![feature(try_from)]
 extern crate pest;
 
 
@@ -11,6 +12,9 @@ extern crate pest_derive;
 extern crate dump;
 
 use pest::Parser;
+use pest::iterators::Pair;
+use pest::inputs::StringInput;
+use std::convert::TryFrom;
 use either::Either;
 
 const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
@@ -29,15 +33,25 @@ enum LispLit {
 
 type Name = String;
 
-#[derive(Debug, Clone)]
-struct LispSexp {
-    contents: Option<(Either<Name, Box<LispSexp>>, Vec<LispExpr>)>
+impl TryFrom<Pair<Rule, StringInput>> for LispLit {
+    type Error = ();
+    fn try_from(p: Pair<Rule, StringInput>) -> Result<LispLit, Self::Error> {
+        use LispLit::*;
+        let rule = p.as_rule();
+        let span = p.into_span();
+        match rule {
+            Rule::float => span.as_str().parse().map(F).or_else(|_| Err(())),
+            Rule::int => span.as_str().parse().map(I).or_else(|_| Err(())),
+            Rule::string => Ok(S(span.as_str().to_owned())),
+            Rule::boolean => span.as_str().parse().map(B).or_else(|_| Err(())),
+            _ => Err(()),
+        }
+    }
 }
-
 #[derive(Debug, Clone)]
 enum LispExpr {
     Ident(Name),
-    Sexp(LispSexp),
+    Sexp(Vec<LispExpr>),
     Lit(LispLit),
 }
 
