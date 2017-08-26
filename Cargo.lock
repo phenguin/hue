@@ -3,6 +3,7 @@ name = "hue"
 version = "0.1.0"
 dependencies = [
  "dump 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "either 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pest 1.0.0-beta.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "pest_derive 1.0.0-beta.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -10,6 +11,11 @@ dependencies = [
 [[package]]
 name = "dump"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "either"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -48,6 +54,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [metadata]
 "checksum dump 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2cdf33a83c5657a80b925bd6b340b9382e2a04c719df732b5d8c26b33bd2500a"
+"checksum either 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "18785c1ba806c258137c937e44ada9ee7e69a37e3c72077542cd2f069d78562a"
 "checksum pest 1.0.0-beta.5 (registry+https://github.com/rust-lang/crates.io-index)" = "5e3828b8b0151a514fbcb1d14439c43243ce4408c98cb891c4b4ecbce1c39bf1"
 "checksum pest_derive 1.0.0-beta.5 (registry+https://github.com/rust-lang/crates.io-index)" = "b474cfcafb607487bc72cf3a9888beec9ef104e79dc74f5ca8c93045ba6c88e5"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"

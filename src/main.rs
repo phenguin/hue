@@ -1,5 +1,9 @@
 extern crate pest;
 
+
+#[macro_use]
+extern crate either;
+
 #[macro_use]
 extern crate pest_derive;
 
@@ -7,13 +11,38 @@ extern crate pest_derive;
 extern crate dump;
 
 use pest::Parser;
+use either::Either;
+
+const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
 
 #[derive(Parser)]
 #[grammar = "lisp.pest"]
 struct LispParser;
 
+#[derive(Debug, Clone, PartialEq)]
+enum LispLit {
+    I(i64),
+    F(f64),
+    S(String),
+    B(bool),
+}
+
+type Name = String;
+
+#[derive(Debug, Clone)]
+struct LispSexp {
+    contents: Option<(Either<Name, Box<LispSexp>>, Vec<LispExpr>)>
+}
+
+#[derive(Debug, Clone)]
+enum LispExpr {
+    Ident(Name),
+    Sexp(LispSexp),
+    Lit(LispLit),
+}
+
 fn main() {
-    let pairs = LispParser::parse_str(Rule::program, "(a b c)").unwrap_or_else(|e| panic!("{}", e));
+    let pairs = LispParser::parse_str(Rule::program, "(a \"hey there\" b c)").unwrap_or_else(|e| panic!("{}", e));
 
     // Because ident_list is silent, the iterator will contain idents
     for pair in pairs {
