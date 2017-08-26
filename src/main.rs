@@ -3,9 +3,6 @@ extern crate pest;
 
 
 #[macro_use]
-extern crate either;
-
-#[macro_use]
 extern crate pest_derive;
 
 #[macro_use]
@@ -15,7 +12,6 @@ use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::StringInput;
 use std::convert::TryFrom;
-use either::Either;
 
 const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
 
@@ -48,15 +44,60 @@ impl TryFrom<Pair<Rule, StringInput>> for LispLit {
         }
     }
 }
+
+impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
+    type Error = ();
+    fn try_from(p: Pair<Rule, StringInput>) -> Result<LispExpr, Self::Error> {
+        use LispExpr::*;
+        let rule = p.as_rule();
+        match rule {
+            Rule::ident => Ok(Ident(p.into_span().as_str().to_owned())),
+            Rule::sexp => LispSexp::try_from(p).map(Sexp),
+            Rule::literal => LispLit::try_from(p).map(Lit),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
+    type Error = ();
+    fn try_from(pair: Pair<Rule, StringInput>) -> Result<LispSexp, Self::Error> {
+        use LispExpr::*;
+        let rule = pair.as_rule();
+        let mut res = Vec::new();
+        match rule {
+            Rule::sexp => {
+                for p in pair.into_inner() {
+                    let rule = p.as_rule();
+                    match rule {
+                        Rule::ident => res.push(Ident(p.into_span().as_str().to_owned())),
+                        Rule::sexp => res.push(Sexp(LispSexp::try_from(p)?)),
+                        Rule::expr => res.push((LispExpr::try_from(p)?)),
+                        _ => unreachable!(),
+                    }
+                }
+                Ok(LispSexp{ contents: res })
+            },
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct LispSexp {
+    contents: Vec<LispExpr>,
+}
+
 #[derive(Debug, Clone)]
 enum LispExpr {
     Ident(Name),
-    Sexp(Vec<LispExpr>),
+    Sexp(LispSexp),
     Lit(LispLit),
 }
 
 fn main() {
-    let pairs = LispParser::parse_str(Rule::program, "(a \"hey there\" b c)").unwrap_or_else(|e| panic!("{}", e));
+    let pairs = LispParser::parse_str(Rule::sexp, "(f (h 1 2) (g 3 4 5))").unwrap_or_else(|e| panic!("{}", e));
+    dump!(pairs);
 
     // Because ident_list is silent, the iterator will contain idents
     for pair in pairs {
@@ -65,10 +106,12 @@ fn main() {
         println!("Span:    {:?}", pair.clone().into_span());
         println!("Text:    {}", pair.clone().into_span().as_str());
 
-
         dump!(pair);
 
-        // // A pair can be converted to an iterator of the tokens which make it up:
+        let it: LispExpr = LispExpr::try_from(pair).unwrap();
+
+        dump!(it);
+        // A pair can be converted to an iterator of the tokens which make it up:
         // for inner_pair in pair.into_inner() {
         //     match inner_pair.as_rule() {
         //         Rule::ident => println!("Ident:  {:?}", inner_pair.into_span().as_str()),

@@ -1,9 +1,7 @@
-
+whitespace = _{ " " | "\t" | "\u{000C}" | "\r" | "\n" }
 
 lparen = _{ "(" }
 rparen = _{ ")" }
-
-
 
 comment = _{ "#" ~ (!"\n" ~ any)* ~ "\n" }
 letters = _{ 'A'..'Z' | 'a'..'z' }
@@ -28,8 +26,8 @@ string   = @{ "\"" ~ (escape | !("\"" | "\\") ~ any)* ~ "\"" }
 
 ident  = @{ ("_" | letters) ~ ("_" | letters | ('0'..'9'))* }
 literal = @{ float | int | string | boolean }
-expr = { ident | sexp | literal }
+expr = _{ ident | sexp | literal }
 
 sexp = { lparen ~ (ident | sexp) ~ expr* ~ rparen }
 
-program = { expr* }
+program = { sexp* }
