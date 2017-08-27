@@ -47,20 +47,28 @@ type Name = String;
 
 impl TryFrom<Pair<Rule, StringInput>> for LispLit {
     type Error = Error;
-    fn try_from(p: Pair<Rule, StringInput>) -> Res<LispLit> {
+    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispLit> {
         use LispLit::*;
-        let rule = p.as_rule();
-        let span = p.into_span();
+        let rule = pair.as_rule();
         match rule {
-            Rule::float => span.as_str().parse().map(F).chain_err(
-                || format!("Bad parse float parse: {}", span.as_str())),
-            Rule::int => span.as_str().parse().map(I).chain_err(
-                || format!("Bad parse float parse: {}", span.as_str())),
-            Rule::string => Ok(S(span.as_str().to_owned())),
-            Rule::boolean => span.as_str().parse().map(B).chain_err(
-                || format!("Bad parse float parse: {}", span.as_str())),
-            _ => bail!("Unexpected: ({:?}){:?}", rule, span),
+            Rule::literal => {
+                let p = pair.into_inner().next().expect("No body for literal.");
+                let rule = p.as_rule();
+                let span = p.into_span();
+                match rule {
+                    Rule::float => span.as_str().parse().map(F).chain_err(
+                        || format!("Bad parse float parse: {}", span.as_str())),
+                    Rule::int => span.as_str().parse().map(I).chain_err(
+                        || format!("Bad parse float parse: {}", span.as_str())),
+                    Rule::string => Ok(S(span.as_str().to_owned())),
+                    Rule::boolean => span.as_str().parse().map(B).chain_err(
+                        || format!("Bad parse float parse: {}", span.as_str())),
+                    _ => bail!("Line {} -- Unexpected: ({:?}){:?}", line!(), rule, span),
+                }
+            },
+            _ => bail!("Line {} -- Unexpected: {:?}", line!(), pair),
         }
+
     }
 }
 
@@ -77,10 +85,10 @@ impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
                     Rule::ident => Ok(Ident(p.into_span().as_str().to_owned())),
                     Rule::sexp => LispSexp::try_from(p).map(Sexp),
                     Rule::literal => LispLit::try_from(p).map(Lit),
-                    _ => bail!("Unexpected: {:?}", p),
+                    _ => bail!("Line {} -- Unexpected: {:?}", line!(), p),
                 }
             },
-            _ => bail!("Unexpected: {:?}", pair),
+            _ => bail!("Line {} -- Unexpected: {:?}", line!(), pair),
         }
     }
 }
@@ -99,12 +107,12 @@ impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
                         Rule::ident => res.push(Ident(p.into_span().as_str().to_owned())),
                         Rule::sexp => res.push(Sexp(LispSexp::try_from(p)?)),
                         Rule::expr => res.push((LispExpr::try_from(p)?)),
-                        _ => bail!("Unexpected: {:?}", p),
+                        _ => bail!("Line {} -- Unexpected: {:?}", line!(), p),
                     }
                 }
                 Ok(LispSexp{ contents: res })
             },
-            _ => bail!("Unexpected: {:?}", pair),
+            _ => bail!("Line {} -- Unexpected: {:?}", line!(), pair),
         }
     }
 }
