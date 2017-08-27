@@ -5,6 +5,7 @@ authors = ["Justin Cullen <jcullen@alum.mit.edu>"]
 
 [dependencies]
 pest = "^1.0.0-beta"
+error-chain = "*"
 pest_derive = "^1.0.0-beta"
 dump = "*"
 either = "*"

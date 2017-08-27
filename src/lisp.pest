@@ -25,7 +25,7 @@ float    = @{
 string   = @{ "\"" ~ (escape | !("\"" | "\\") ~ any)* ~ "\"" }
 
 ident  = @{ ("_" | letters) ~ ("_" | letters | ('0'..'9'))* }
-literal = @{ float | int | string | boolean }
+literal = _{ float | int | string | boolean }
 expr = { ident | sexp | literal }
 
 sexp = { lparen ~ expr* ~ rparen }

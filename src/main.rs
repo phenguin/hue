@@ -1,3 +1,4 @@
+#![recursion_limit = "1024"]
 #![feature(try_from)]
 extern crate pest;
 
@@ -7,20 +8,26 @@ extern crate pest_derive;
 #[macro_use]
 extern crate dump;
 
+#[macro_use]
+extern crate error_chain;
+
+// We'll put our errors in an `errors` module, and other modules in
+// this crate will `use errors::*;` to get access to everything
+// `error_chain!` creates.
+mod errors {
+    error_chain! {
+        types {
+            Error, ErrorKind, ResultExt, Res;
+        }
+    }
+}
+
+use errors::*;
+
 use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::StringInput;
 use std::convert::TryFrom;
-
-macro_rules! oops {
-    ($x:expr) => {
-        {
-            println!("OOPS!");
-            dump!($x);
-            unreachable!()
-        }
-    }
-}
 
 const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
 
@@ -39,45 +46,48 @@ enum LispLit {
 type Name = String;
 
 impl TryFrom<Pair<Rule, StringInput>> for LispLit {
-    type Error = ();
-    fn try_from(p: Pair<Rule, StringInput>) -> Result<LispLit, Self::Error> {
+    type Error = Error;
+    fn try_from(p: Pair<Rule, StringInput>) -> Res<LispLit> {
         use LispLit::*;
         let rule = p.as_rule();
         let span = p.into_span();
         match rule {
-            Rule::float => span.as_str().parse().map(F).or_else(|_| Err(())),
-            Rule::int => span.as_str().parse().map(I).or_else(|_| Err(())),
+            Rule::float => span.as_str().parse().map(F).chain_err(
+                || format!("Bad parse float parse: {}", span.as_str())),
+            Rule::int => span.as_str().parse().map(I).chain_err(
+                || format!("Bad parse float parse: {}", span.as_str())),
             Rule::string => Ok(S(span.as_str().to_owned())),
-            Rule::boolean => span.as_str().parse().map(B).or_else(|_| Err(())),
-            _ => Err(()),
+            Rule::boolean => span.as_str().parse().map(B).chain_err(
+                || format!("Bad parse float parse: {}", span.as_str())),
+            _ => bail!("Unexpected: ({:?}){:?}", rule, span),
         }
     }
 }
 
 impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
-    type Error = ();
-    fn try_from(pair: Pair<Rule, StringInput>) -> Result<LispExpr, Self::Error> {
+    type Error = Error;
+    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispExpr> {
         use LispExpr::*;
         let rule = pair.as_rule();
         match rule {
             Rule::expr => {
-                let p = pair.into_inner().next().ok_or(())?;
+                let p = pair.into_inner().next().expect("Expr has no body");
                 let rule = p.as_rule();
                 match rule {
                     Rule::ident => Ok(Ident(p.into_span().as_str().to_owned())),
                     Rule::sexp => LispSexp::try_from(p).map(Sexp),
                     Rule::literal => LispLit::try_from(p).map(Lit),
-                    _ => oops!(p),
+                    _ => bail!("Unexpected: {:?}", p),
                 }
             },
-            _ => oops!(pair),
+            _ => bail!("Unexpected: {:?}", pair),
         }
     }
 }
 
 impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
-    type Error = ();
-    fn try_from(pair: Pair<Rule, StringInput>) -> Result<LispSexp, Self::Error> {
+    type Error = Error;
+    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispSexp> {
         use LispExpr::*;
         let rule = pair.as_rule();
         let mut res = Vec::new();
@@ -89,12 +99,12 @@ impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
                         Rule::ident => res.push(Ident(p.into_span().as_str().to_owned())),
                         Rule::sexp => res.push(Sexp(LispSexp::try_from(p)?)),
                         Rule::expr => res.push((LispExpr::try_from(p)?)),
-                        _ => oops!(p),
+                        _ => bail!("Unexpected: {:?}", p),
                     }
                 }
                 Ok(LispSexp{ contents: res })
             },
-            _ => oops!(pair),
+            _ => bail!("Unexpected: {:?}", pair),
         }
     }
 }
@@ -112,7 +122,25 @@ enum LispExpr {
 }
 
 fn main() {
-    let pairs = LispParser::parse_str(Rule::sexp, "(f (h 1 2) (g 3 4 5))").unwrap_or_else(|e| panic!("{}", e));
+    if let Err(ref e) = run() {
+        println!("error: {}", e);
+
+        for e in e.iter().skip(1) {
+            println!("caused by: {}", e);
+        }
+
+        // The backtrace is not always generated. Try to run this example
+        // with `RUST_BACKTRACE=1`.
+        if let Some(backtrace) = e.backtrace() {
+            println!("backtrace: {:?}", backtrace);
+        }
+
+        ::std::process::exit(1);
+    }
+}
+
+fn run() -> Res<()> {
+    let pairs = LispParser::parse_str(Rule::sexp, "(f (h 1 2) (g 3 4 5))").expect("Pest parsing failed.");
     dump!(pairs);
 
     // Because ident_list is silent, the iterator will contain idents
@@ -124,7 +152,7 @@ fn main() {
 
         dump!(pair);
 
-        let it = LispSexp::try_from(pair).unwrap();
+        let it = LispSexp::try_from(pair)?;
 
         dump!(it);
         // A pair can be converted to an iterator of the tokens which make it up:
@@ -135,4 +163,5 @@ fn main() {
         //     };
         // }
     }
+    Ok(())
 }
