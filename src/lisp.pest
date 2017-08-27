@@ -10,8 +10,8 @@ hex     = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
 unicode = _{ "u" ~ hex ~ hex ~ hex ~ hex }
 escape  = _{ "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t" | unicode) }
 
-op_true  = { "true" }
-op_false = { "false" }
+op_true  = { "#t" }
+op_false = { "#f" }
 boolean  = _{ op_true | op_false }
 int      = @{ "-"? ~ ("0" | '1'..'9' ~ '0'..'9'*) }
 float    = @{

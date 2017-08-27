@@ -1,12 +1,24 @@
 #![recursion_limit = "1024"]
 #![feature(try_from)]
+#![feature(core_intrinsics)]
+
+pub fn get_type_of<T>(_: &T) -> String {
+	  unsafe {
+		    std::intrinsics::type_name::<T>()
+	  }.to_owned()
+}
+
+#[macro_export]
+macro_rules! dump(
+	  ($($a:expr),*) => {
+		    println!(concat!("[", file!(), ":", line!(), "] ", $(stringify!($a), ": {} = {:#?}; "),*), $($crate::get_type_of(&$a), $a),*);
+	  }
+);
+
 extern crate pest;
 
 #[macro_use]
 extern crate pest_derive;
-
-#[macro_use]
-extern crate dump;
 
 #[macro_use]
 extern crate error_chain;
@@ -24,6 +36,7 @@ mod errors {
 
 use errors::*;
 
+use std::fmt;
 use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::StringInput;
@@ -41,6 +54,18 @@ enum LispLit {
     F(f64),
     S(String),
     B(bool),
+}
+
+impl fmt::Display for LispLit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use LispLit::*;
+        match self {
+            &I(x) => write!(f, "{}", x),
+            &F(x) => write!(f, "{}", x),
+            &S(ref x) => write!(f, "{}", x),
+            &B(x) => write!(f, "{}", x),
+        }
+    }
 }
 
 type Name = String;
@@ -63,10 +88,10 @@ impl TryFrom<Pair<Rule, StringInput>> for LispLit {
                     Rule::string => Ok(S(span.as_str().to_owned())),
                     Rule::boolean => span.as_str().parse().map(B).chain_err(
                         || format!("Bad parse float parse: {}", span.as_str())),
-                    _ => bail!("Line {} -- Unexpected: ({:?}){:?}", line!(), rule, span),
+                    _ => bail!("Line {} -- Unexpected: ({:#?}){:#?}", line!(), rule, span),
                 }
             },
-            _ => bail!("Line {} -- Unexpected: {:?}", line!(), pair),
+            _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
 
     }
@@ -85,10 +110,10 @@ impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
                     Rule::ident => Ok(Ident(p.into_span().as_str().to_owned())),
                     Rule::sexp => LispSexp::try_from(p).map(Sexp),
                     Rule::literal => LispLit::try_from(p).map(Lit),
-                    _ => bail!("Line {} -- Unexpected: {:?}", line!(), p),
+                    _ => bail!("Line {} -- Unexpected: {:#?}", line!(), p),
                 }
             },
-            _ => bail!("Line {} -- Unexpected: {:?}", line!(), pair),
+            _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
     }
 }
@@ -107,12 +132,12 @@ impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
                         Rule::ident => res.push(Ident(p.into_span().as_str().to_owned())),
                         Rule::sexp => res.push(Sexp(LispSexp::try_from(p)?)),
                         Rule::expr => res.push((LispExpr::try_from(p)?)),
-                        _ => bail!("Line {} -- Unexpected: {:?}", line!(), p),
+                        _ => bail!("Line {} -- Unexpected: {:#?}", line!(), p),
                     }
                 }
                 Ok(LispSexp{ contents: res })
             },
-            _ => bail!("Line {} -- Unexpected: {:?}", line!(), pair),
+            _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
     }
 }
@@ -140,7 +165,7 @@ fn main() {
         // The backtrace is not always generated. Try to run this example
         // with `RUST_BACKTRACE=1`.
         if let Some(backtrace) = e.backtrace() {
-            println!("backtrace: {:?}", backtrace);
+            println!("backtrace: {:#?}", backtrace);
         }
 
         ::std::process::exit(1);
@@ -149,27 +174,15 @@ fn main() {
 
 fn run() -> Res<()> {
     let pairs = LispParser::parse_str(Rule::sexp, "(f (h 1 2) (g 3 4 5))").expect("Pest parsing failed.");
-    dump!(pairs);
-
     // Because ident_list is silent, the iterator will contain idents
     for pair in pairs {
         // A pair is a combination of the rule which matched and a span of input
-        println!("Rule:    {:?}", pair.as_rule());
-        println!("Span:    {:?}", pair.clone().into_span());
+        println!("Rule:    {:#?}", pair.as_rule());
+        println!("Span:    {:#?}", pair.clone().into_span());
         println!("Text:    {}", pair.clone().into_span().as_str());
-
-        dump!(pair);
 
         let it = LispSexp::try_from(pair)?;
 
-        dump!(it);
-        // A pair can be converted to an iterator of the tokens which make it up:
-        // for inner_pair in pair.into_inner() {
-        //     match inner_pair.as_rule() {
-        //         Rule::ident => println!("Ident:  {:?}", inner_pair.into_span().as_str()),
-        //         _ => unreachable!()
-        //     };
-        // }
     }
     Ok(())
 }
