@@ -1,7 +1,6 @@
 #![feature(try_from)]
 extern crate pest;
 
-
 #[macro_use]
 extern crate pest_derive;
 
@@ -12,6 +11,16 @@ use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::StringInput;
 use std::convert::TryFrom;
+
+macro_rules! oops {
+    ($x:expr) => {
+        {
+            println!("OOPS!");
+            dump!($x);
+            unreachable!()
+        }
+    }
+}
 
 const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
 
@@ -47,14 +56,21 @@ impl TryFrom<Pair<Rule, StringInput>> for LispLit {
 
 impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
     type Error = ();
-    fn try_from(p: Pair<Rule, StringInput>) -> Result<LispExpr, Self::Error> {
+    fn try_from(pair: Pair<Rule, StringInput>) -> Result<LispExpr, Self::Error> {
         use LispExpr::*;
-        let rule = p.as_rule();
+        let rule = pair.as_rule();
         match rule {
-            Rule::ident => Ok(Ident(p.into_span().as_str().to_owned())),
-            Rule::sexp => LispSexp::try_from(p).map(Sexp),
-            Rule::literal => LispLit::try_from(p).map(Lit),
-            _ => unreachable!(),
+            Rule::expr => {
+                let p = pair.into_inner().next().ok_or(())?;
+                let rule = p.as_rule();
+                match rule {
+                    Rule::ident => Ok(Ident(p.into_span().as_str().to_owned())),
+                    Rule::sexp => LispSexp::try_from(p).map(Sexp),
+                    Rule::literal => LispLit::try_from(p).map(Lit),
+                    _ => oops!(p),
+                }
+            },
+            _ => oops!(pair),
         }
     }
 }
@@ -73,12 +89,12 @@ impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
                         Rule::ident => res.push(Ident(p.into_span().as_str().to_owned())),
                         Rule::sexp => res.push(Sexp(LispSexp::try_from(p)?)),
                         Rule::expr => res.push((LispExpr::try_from(p)?)),
-                        _ => unreachable!(),
+                        _ => oops!(p),
                     }
                 }
                 Ok(LispSexp{ contents: res })
             },
-            _ => unreachable!(),
+            _ => oops!(pair),
         }
     }
 }
@@ -108,7 +124,7 @@ fn main() {
 
         dump!(pair);
 
-        let it: LispExpr = LispExpr::try_from(pair).unwrap();
+        let it = LispSexp::try_from(pair).unwrap();
 
         dump!(it);
         // A pair can be converted to an iterator of the tokens which make it up:

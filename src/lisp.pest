@@ -26,8 +26,8 @@ string   = @{ "\"" ~ (escape | !("\"" | "\\") ~ any)* ~ "\"" }
 
 ident  = @{ ("_" | letters) ~ ("_" | letters | ('0'..'9'))* }
 literal = @{ float | int | string | boolean }
-expr = _{ ident | sexp | literal }
+expr = { ident | sexp | literal }
 
-sexp = { lparen ~ (ident | sexp) ~ expr* ~ rparen }
+sexp = { lparen ~ expr* ~ rparen }
 
 program = { sexp* }
