@@ -7,8 +7,10 @@ use pest::inputs::StringInput;
 
 use std::convert::TryFrom;
 
+const _GRAMMAR: &'static str = include_str!("./tree.pest"); 
+
 #[derive(Parser)]
-#[grammar = "tree.pest"]
+#[grammar = "parsers/tree.pest"]
 pub struct TreeParser;
 
 impl TryFrom<Pair<Rule, StringInput>> for Tree {

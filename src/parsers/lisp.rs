@@ -30,7 +30,7 @@ impl fmt::Display for LispLit {
 const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
 
 #[derive(Parser)]
-#[grammar = "lisp.pest"]
+#[grammar = "parsers/lisp.pest"]
 pub struct LispParser;
 
 type Name = String;

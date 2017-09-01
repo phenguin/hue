@@ -2,8 +2,7 @@
 #![feature(try_from)]
 #![feature(core_intrinsics)]
 
-mod lisp;
-mod diff;
+mod parsers;
 mod errors;
 
 pub fn get_type_of<T>(_: &T) -> String {
@@ -55,13 +54,13 @@ fn main() {
 }
 
 fn run2() -> Res<()> {
-    use diff::TreeParser;
+    use parsers::tree::TreeParser;
     Ok(())
     
 }
 
 fn run() -> Res<()> {
-    use lisp::LispParser;
+    use parsers::lisp;
     let pairs = lisp::LispParser::parse_str(lisp::Rule::sexp, "(f (h 1 2) (g 3 4 5))").expect("Pest parsing failed.");
     // Because ident_list is silent, the iterator will contain idents
     for pair in pairs {
