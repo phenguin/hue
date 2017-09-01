@@ -1,7 +1,5 @@
-#![feature(try_from)]
 use errors::*;
 
-use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::StringInput;
 
@@ -11,6 +9,7 @@ const _GRAMMAR: &'static str = include_str!("./tree.pest");
 
 #[derive(Parser)]
 #[grammar = "parsers/tree.pest"]
+#[allow(dead_code)]
 pub struct TreeParser;
 
 impl TryFrom<Pair<Rule, StringInput>> for Tree {
@@ -34,8 +33,4 @@ impl TryFrom<Pair<Rule, StringInput>> for Tree {
 pub struct Tree {
     key: i64,
     children: Vec<Tree>,
-}
-
-fn parse(s: &str) -> Res<Tree> {
-    unreachable!()
 }

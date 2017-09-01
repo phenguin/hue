@@ -4,11 +4,12 @@ use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::StringInput;
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 
 
 #[derive(Debug, Clone, PartialEq)]
-enum LispLit {
+pub enum LispLit {
     I(i64),
     F(f64),
     S(String),
@@ -107,14 +108,52 @@ impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
     }
 }
 
-#[derive(Debug, Clone)]
-struct LispSexp {
-    contents: Vec<LispExpr>,
+impl TryFrom<Pair<Rule, StringInput>> for LispProgram {
+    type Error = Error;
+    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispProgram> {
+        let rule = pair.as_rule();
+        let mut res = Vec::new();
+        match rule {
+            Rule::program => {
+                for p in pair.into_inner() {
+                    res.push(LispSexp::try_from(p)?);
+                }
+                Ok(LispProgram(res))
+            },
+            _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
-enum LispExpr {
+pub struct LispSexp {
+    pub contents: Vec<LispExpr>,
+}
+
+#[derive(Debug, Clone)]
+pub enum LispExpr {
     Ident(Name),
     Sexp(LispSexp),
     Lit(LispLit),
+}
+
+#[derive(Debug, Clone)]
+pub struct LispProgram(Vec<LispSexp>);
+
+impl FromStr for LispProgram {
+    type Err = self::Error;
+    fn from_str(s: &str) -> Res<Self> {
+        let pairs = LispParser::parse_str(Rule::program, s);
+        match pairs {
+            Err(_) => return Err("Parsing failed.".into()),
+            Ok(mut pairs) => {
+                match pairs.next() {
+                    Some(program) => {
+                        LispProgram::try_from(program)
+                    },
+                    None => Ok(LispProgram(Vec::new())),
+                }
+            }
+        }
+    }
 }

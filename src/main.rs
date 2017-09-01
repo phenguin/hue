@@ -28,13 +28,6 @@ extern crate pest_derive;
 
 use errors::*;
 
-use std::fmt;
-use pest::Parser;
-use pest::iterators::Pair;
-use pest::inputs::StringInput;
-use std::convert::TryFrom;
-
-
 fn main() {
     if let Err(ref e) = run() {
         println!("error: {}", e);
@@ -53,21 +46,14 @@ fn main() {
     }
 }
 
+#[allow(dead_code)]
 fn run2() -> Res<()> {
-    use parsers::tree::TreeParser;
     Ok(())
-    
 }
 
 fn run() -> Res<()> {
-    use parsers::lisp;
-    let pairs = lisp::LispParser::parse_str(lisp::Rule::sexp, "(f (h 1 2) (g 3 4 5))").expect("Pest parsing failed.");
-    // Because ident_list is silent, the iterator will contain idents
-    for pair in pairs {
-        // A pair is a combination of the rule which matched and a span of input
-        println!("Rule:    {:#?}", pair.as_rule());
-        println!("Span:    {:#?}", pair.clone().into_span());
-        println!("Text:    {}", pair.clone().into_span().as_str());
-    }
+    use parsers::lisp::LispProgram;
+    let it =  "(f (h 1 2) (g 3 4 5))";
+    dump!(it.parse::<LispProgram>());
     Ok(())
 }
