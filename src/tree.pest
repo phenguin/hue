@@ -1,0 +1,12 @@
+whitespace = _{ " " | "\t" | "\u{000C}" | "\r" | "\n" }
+
+lparen = _{ "(" }
+rparen = _{ ")" }
+
+int      = @{ "-"? ~ ("0" | '1'..'9' ~ '0'..'9'*) }
+
+tree_list = _{ lparen ~ tree* ~ rparen }
+tree = { int|(int ~ "@" ~ tree_list) }
+
+
+
