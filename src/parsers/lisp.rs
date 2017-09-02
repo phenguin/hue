@@ -2,11 +2,9 @@ use super::*;
 
 use errors::*;
 use std::fmt;
-use pest::Parser;
 use pest::iterators::Pair;
 use pest::inputs::Input;
 use std::convert::TryFrom;
-use std::str::FromStr;
 
 
 
@@ -143,7 +141,7 @@ pub enum LispExpr {
 pub struct LispProgram(Vec<LispSexp>);
 
 impl FromParse for LispProgram {
-    const rule: Self::Rule = Rule::program;
+    const RULE: Self::Rule = Rule::program;
     type Parser = LispParser;
     type Rule = Rule;
     fn represent<I:Input>(pair: Pair<Self::Rule, I>) -> Res<Self> {

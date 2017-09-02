@@ -1,11 +1,9 @@
-#![feature(associated_constants)]
 
 pub mod lisp;
 pub mod tree;
 use pest::{RuleType, Parser};
 use pest::iterators::Pair;
 use pest::inputs::{StringInput, Input};
-use std::str::FromStr;
 use std::marker::Sized;
 
 use errors::*;
@@ -23,7 +21,7 @@ impl<T: AsRef<str>> Parseable for T {
     type Err = Error;
     fn parsed<U: FromParse>(&self) -> Res<U> {
         let s = self.as_ref();
-        let pairs = U::Parser::parse_str(U::rule, s);
+        let pairs = U::Parser::parse_str(U::RULE, s);
         match pairs {
             Err(_) => return Err("Parsing failed.".into()),
             Ok(mut pairs) => {
@@ -42,6 +40,6 @@ impl<T: AsRef<str>> Parseable for T {
 pub trait FromParse: Sized {
     type Rule: RuleType;
     type Parser: Parser<Self::Rule>;
-    const rule: Self::Rule;
+    const RULE: Self::Rule;
     fn represent<I:Input>(Pair<Self::Rule, I>) -> Res<Self>;
 }
