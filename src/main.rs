@@ -5,18 +5,12 @@
 mod parsers;
 mod errors;
 
-pub fn get_type_of<T>(_: &T) -> String {
-	  unsafe {
-		    std::intrinsics::type_name::<T>()
-	  }.to_owned()
-}
+#[macro_use]
+mod util;
 
-#[macro_export]
-macro_rules! dump(
-	  ($($a:expr),*) => {
-		    println!(concat!("[", file!(), ":", line!(), "] ", $(stringify!($a), ": {} = {:#?}; "),*), $($crate::get_type_of(&$a), $a),*);
-	  }
-);
+use parsers::Parseable;
+
+use util::*;
 
 extern crate pest;
 
@@ -53,7 +47,6 @@ fn run2() -> Res<()> {
 
 fn run() -> Res<()> {
     use parsers::lisp::LispProgram;
-    use parsers::Parseable;
     let it =  Box::new(Box::new("(f (h 1 2) (g 3 4 5))"));
     dump!(it.parsed::<LispProgram>());
     Ok(())
