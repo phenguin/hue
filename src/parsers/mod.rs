@@ -10,14 +10,7 @@ use std::marker::Sized;
 
 use errors::*;
 
-trait RepParser {
-    type Rule: RuleType;
-    type Rep;
-    const rule: Self::Rule;
-    fn represent(Pair<Self::Rule, StringInput>) -> Res<Self::Rep>;
-}
-
-trait Parseable {
+pub trait Parseable {
     type Err;
     type Input: Input;
     fn parsed<T>(&self) -> Result<T, Self::Err>
@@ -46,7 +39,7 @@ impl<T: AsRef<str>> Parseable for T {
     }
 }
 
-trait FromParse: Sized {
+pub trait FromParse: Sized {
     type Rule: RuleType;
     type Parser: Parser<Self::Rule>;
     const rule: Self::Rule;

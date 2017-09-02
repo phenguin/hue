@@ -53,7 +53,8 @@ fn run2() -> Res<()> {
 
 fn run() -> Res<()> {
     use parsers::lisp::LispProgram;
-    let it =  "(f (h 1 2) (g 3 4 5))";
-    dump!(it.parse::<LispProgram>());
+    use parsers::Parseable;
+    let it =  Box::new(Box::new("(f (h 1 2) (g 3 4 5))"));
+    dump!(it.parsed::<LispProgram>());
     Ok(())
 }

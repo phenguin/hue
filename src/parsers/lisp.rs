@@ -1,8 +1,10 @@
+use super::*;
+
 use errors::*;
 use std::fmt;
 use pest::Parser;
 use pest::iterators::Pair;
-use pest::inputs::StringInput;
+use pest::inputs::Input;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
@@ -36,9 +38,9 @@ pub struct LispParser;
 
 type Name = String;
 
-impl TryFrom<Pair<Rule, StringInput>> for LispLit {
+impl<I: Input> TryFrom<Pair<Rule, I>> for LispLit {
     type Error = Error;
-    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispLit> {
+    fn try_from(pair: Pair<Rule, I>) -> Res<LispLit> {
         use self::LispLit::*;
         let rule = pair.as_rule();
         match rule {
@@ -63,9 +65,9 @@ impl TryFrom<Pair<Rule, StringInput>> for LispLit {
     }
 }
 
-impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
+impl<I: Input> TryFrom<Pair<Rule, I>> for LispExpr {
     type Error = Error;
-    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispExpr> {
+    fn try_from(pair: Pair<Rule, I>) -> Res<LispExpr> {
         use self::LispExpr::*;
         let rule = pair.as_rule();
         match rule {
@@ -84,9 +86,9 @@ impl TryFrom<Pair<Rule, StringInput>> for LispExpr {
     }
 }
 
-impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
+impl<I:Input> TryFrom<Pair<Rule, I>> for LispSexp {
     type Error = Error;
-    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispSexp> {
+    fn try_from(pair: Pair<Rule, I>) -> Res<LispSexp> {
         use self::LispExpr::*;
         let rule = pair.as_rule();
         let mut res = Vec::new();
@@ -108,9 +110,9 @@ impl TryFrom<Pair<Rule, StringInput>> for LispSexp {
     }
 }
 
-impl TryFrom<Pair<Rule, StringInput>> for LispProgram {
+impl<I:Input> TryFrom<Pair<Rule, I>> for LispProgram {
     type Error = Error;
-    fn try_from(pair: Pair<Rule, StringInput>) -> Res<LispProgram> {
+    fn try_from(pair: Pair<Rule, I>) -> Res<LispProgram> {
         let rule = pair.as_rule();
         let mut res = Vec::new();
         match rule {
@@ -140,20 +142,11 @@ pub enum LispExpr {
 #[derive(Debug, Clone)]
 pub struct LispProgram(Vec<LispSexp>);
 
-impl FromStr for LispProgram {
-    type Err = self::Error;
-    fn from_str(s: &str) -> Res<Self> {
-        let pairs = LispParser::parse_str(Rule::program, s);
-        match pairs {
-            Err(_) => return Err("Parsing failed.".into()),
-            Ok(mut pairs) => {
-                match pairs.next() {
-                    Some(program) => {
-                        LispProgram::try_from(program)
-                    },
-                    None => Ok(LispProgram(Vec::new())),
-                }
-            }
-        }
+impl FromParse for LispProgram {
+    const rule: Self::Rule = Rule::program;
+    type Parser = LispParser;
+    type Rule = Rule;
+    fn represent<I:Input>(pair: Pair<Self::Rule, I>) -> Res<Self> {
+        LispProgram::try_from(pair)
     }
 }
