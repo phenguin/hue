@@ -93,10 +93,12 @@ impl<T> Tree<T> {
         next.path_to_mut(path)
     }
 
-    fn apply_mut(&mut self, TreeOp{path, op}: TreeOp<T>) {
+    fn apply_mut(&mut self, TreeOp { path, op }: TreeOp<T>) {
         let part = self.path_to_mut(path);
         match op {
-            Change(new) => {NodeOp::change(&mut part.root, new);},
+            Change(new) => {
+                NodeOp::change(&mut part.root, new);
+            }
             Delete(i) => NodeOp::delete(&mut part.children, i),
             Insert(i, new) => NodeOp::insert(&mut part.children, i, new),
         }

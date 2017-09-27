@@ -28,7 +28,7 @@ impl fmt::Display for LispLit {
     }
 }
 
-const _GRAMMAR: &'static str = include_str!("./lisp.pest"); 
+const _GRAMMAR: &'static str = include_str!("./lisp.pest");
 
 #[derive(Parser)]
 #[grammar = "parsers/lisp.pest"]
@@ -47,16 +47,28 @@ impl<I: Input> TryFrom<Pair<Rule, I>> for LispLit {
                 let rule = p.as_rule();
                 let span = p.into_span();
                 match rule {
-                    Rule::float => span.as_str().parse().map(F).chain_err(
-                        || format!("Bad parse float parse: {}", span.as_str())),
-                    Rule::int => span.as_str().parse().map(I).chain_err(
-                        || format!("Bad parse float parse: {}", span.as_str())),
+                    Rule::float => {
+                        span.as_str()
+                            .parse()
+                            .map(F)
+                            .chain_err(|| format!("Bad parse float parse: {}", span.as_str()))
+                    }
+                    Rule::int => {
+                        span.as_str()
+                            .parse()
+                            .map(I)
+                            .chain_err(|| format!("Bad parse float parse: {}", span.as_str()))
+                    }
                     Rule::string => Ok(S(span.as_str().to_owned())),
-                    Rule::boolean => span.as_str().parse().map(B).chain_err(
-                        || format!("Bad parse float parse: {}", span.as_str())),
+                    Rule::boolean => {
+                        span.as_str()
+                            .parse()
+                            .map(B)
+                            .chain_err(|| format!("Bad parse float parse: {}", span.as_str()))
+                    }
                     _ => bail!("Line {} -- Unexpected: ({:#?}){:#?}", line!(), rule, span),
                 }
-            },
+            }
             _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
 
@@ -78,13 +90,13 @@ impl<I: Input> TryFrom<Pair<Rule, I>> for LispExpr {
                     Rule::literal => LispLit::try_from(p).map(Lit),
                     _ => bail!("Line {} -- Unexpected: {:#?}", line!(), p),
                 }
-            },
+            }
             _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
     }
 }
 
-impl<I:Input> TryFrom<Pair<Rule, I>> for LispSexp {
+impl<I: Input> TryFrom<Pair<Rule, I>> for LispSexp {
     type Error = Error;
     fn try_from(pair: Pair<Rule, I>) -> Res<LispSexp> {
         use self::LispExpr::*;
@@ -101,14 +113,14 @@ impl<I:Input> TryFrom<Pair<Rule, I>> for LispSexp {
                         _ => bail!("Line {} -- Unexpected: {:#?}", line!(), p),
                     }
                 }
-                Ok(LispSexp{ contents: res })
-            },
+                Ok(LispSexp { contents: res })
+            }
             _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
     }
 }
 
-impl<I:Input> TryFrom<Pair<Rule, I>> for LispProgram {
+impl<I: Input> TryFrom<Pair<Rule, I>> for LispProgram {
     type Error = Error;
     fn try_from(pair: Pair<Rule, I>) -> Res<LispProgram> {
         let rule = pair.as_rule();
@@ -119,7 +131,7 @@ impl<I:Input> TryFrom<Pair<Rule, I>> for LispProgram {
                     res.push(LispSexp::try_from(p)?);
                 }
                 Ok(LispProgram(res))
-            },
+            }
             _ => bail!("Line {} -- Unexpected: {:#?}", line!(), pair),
         }
     }
@@ -144,7 +156,7 @@ impl FromParse for LispProgram {
     const RULE: Self::Rule = Rule::program;
     type Parser = LispParser;
     type Rule = Rule;
-    fn represent<I:Input>(pair: Pair<Self::Rule, I>) -> Res<Self> {
+    fn represent<I: Input>(pair: Pair<Self::Rule, I>) -> Res<Self> {
         LispProgram::try_from(pair)
     }
 }

@@ -5,7 +5,7 @@ use pest::inputs::StringInput;
 
 use std::convert::TryFrom;
 
-const _GRAMMAR: &'static str = include_str!("./tree.pest"); 
+const _GRAMMAR: &'static str = include_str!("./tree.pest");
 
 #[derive(Parser)]
 #[grammar = "parsers/tree.pest"]
@@ -17,14 +17,20 @@ impl TryFrom<Pair<Rule, StringInput>> for Tree {
     fn try_from(p: Pair<Rule, StringInput>) -> Res<Tree> {
         let rule = p.as_rule();
         match rule {
-            Rule::int => p.into_span().as_str().parse().map(|n| Tree {
-                key: n,
-                children: Vec::new(),
-            }).chain_err(|| "bad parse"),
-            Rule::tree => {
-                unreachable!()
-            },
-            _ => unreachable!()
+            Rule::int => {
+                p.into_span()
+                    .as_str()
+                    .parse()
+                    .map(|n| {
+                        Tree {
+                            key: n,
+                            children: Vec::new(),
+                        }
+                    })
+                    .chain_err(|| "bad parse")
+            }
+            Rule::tree => unreachable!(),
+            _ => unreachable!(),
         }
     }
 }

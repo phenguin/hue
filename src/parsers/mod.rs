@@ -11,9 +11,7 @@ use errors::*;
 pub trait Parseable {
     type Err;
     type Input: Input;
-    fn parsed<T>(&self) -> Result<T, Self::Err>
-        where T: FromParse;
-
+    fn parsed<T>(&self) -> Result<T, Self::Err> where T: FromParse;
 }
 
 impl<T: AsRef<str>> Parseable for T {
@@ -26,9 +24,7 @@ impl<T: AsRef<str>> Parseable for T {
             Err(_) => return Err("Parsing failed.".into()),
             Ok(mut pairs) => {
                 match pairs.next() {
-                    Some(data) => {
-                        U::represent(data)
-                    },
+                    Some(data) => U::represent(data),
                     None => Err("Nothing parsed.".into()),
                 }
             }
@@ -41,5 +37,5 @@ pub trait FromParse: Sized {
     type Rule: RuleType;
     type Parser: Parser<Self::Rule>;
     const RULE: Self::Rule;
-    fn represent<I:Input>(Pair<Self::Rule, I>) -> Res<Self>;
+    fn represent<I: Input>(Pair<Self::Rule, I>) -> Res<Self>;
 }
