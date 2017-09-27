@@ -1,0 +1,6 @@
+[package]
+name = "folder_derive"
+version = "0.1.0"
+authors = ["Justin Cullen <jcullen@alum.mit.edu>"]
+
+[dependencies]
