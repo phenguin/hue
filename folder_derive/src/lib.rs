@@ -1,7 +1,6 @@
 #![feature(proc_macro)]
 
 extern crate proc_macro;
-extern crate case;
 extern crate syn;
 #[macro_use] extern crate quote;
 #[macro_use] extern crate synom;
@@ -10,10 +9,9 @@ use std::collections::HashSet;
 use proc_macro::TokenStream;
 use syn::derive::parsing::derive_input;
 use syn::parse::IResult;
-use syn::{DeriveInput, Ident, Field, Body, Variant, VariantData, Ty};
+use syn::{DeriveInput, Ident, VariantData, Ty};
 use syn::Body::*;
 use syn::ident::parsing::ident;
-use case::CaseExt;
 
 // TODO Make this more robust.  Just gets last path component now.
 fn type_ident(ty: &Ty) -> Option<Ident> {
@@ -41,13 +39,16 @@ fn parse_foldable_input(input: &str) -> Result<FoldableInput, String> {
 }
 
 fn fold_fn_name(base: &Ident) -> Ident {
-    format!("fold_{}", base).to_lowercase().into()
+    format!("fold_{}", base).into()
 }
 
-fn folder_trait_name(folder_name: &Ident) -> Ident {
-    format!("{}Folder", folder_name.as_ref().to_capitalized()).into()
+fn mapper_fn_name(base: &Ident) -> Ident {
+    format!("mut_map_{}", base).into()
 }
 
+fn mut_fold_fn_name(base:&Ident) -> Ident {
+    format!("mut_{}", fold_fn_name(base)).into()
+}
 
 struct FoldableInput {
     name: Ident,
@@ -57,7 +58,7 @@ struct FoldableInput {
 fn field_expr(types: &HashSet<Ident>, id: &Ident, ty: &Ty) -> quote::Tokens {
     type_ident(ty).map_or(quote!(), |type_id| {
         if types.contains(&type_id) {
-            let f = fold_fn_name(&type_id);
+            let f = mut_fold_fn_name(&type_id);
             quote!(
                 self.#f(&mut it.#id);
             )
@@ -69,7 +70,7 @@ fn field_expr(types: &HashSet<Ident>, id: &Ident, ty: &Ty) -> quote::Tokens {
 
 
 #[proc_macro]
-pub fn foldable(input: TokenStream) -> TokenStream {
+pub fn foldable_types(input: TokenStream) -> TokenStream {
     // Construct a string representation of the type definition
     let s = input.to_string();
 
@@ -79,7 +80,6 @@ pub fn foldable(input: TokenStream) -> TokenStream {
 
     let all_types = type_defs.iter().cloned().map(|d| d.ident).collect::<HashSet<_>>();
 
-    let trait_name = folder_trait_name(&parsed.name);
 
     let field_adjustors = |var_data| {
         use VariantData::*;
@@ -100,43 +100,116 @@ pub fn foldable(input: TokenStream) -> TokenStream {
     };
 
     let fold_functions = type_defs.iter().cloned().map(|def| {
-        let func_name = fold_fn_name(&def.ident);
         let ty = &def.ident;
-
         let body = match def.body {
-            Struct(vd) => {
-                let stmts = field_adjustors(vd);
+            Struct(var_data) => {
+                let stmts = field_adjustors(var_data);
                 quote! {#(
                     #stmts
                 )*}
             },
-            Enum(_vs) => {
-                // quote! {
-                //     #vs
-                // }
-                unreachable!()
+            Enum(variants) => {
+                let match_arms = variants.into_iter().map(|v| {
+                    use VariantData::*;
+                    enum Shape { S, T, U };
+                    let var_name = &v.ident;
+                    let shape;
+                    let matchers: Vec<_> = match v.data {
+                        Unit => {
+                            shape = Shape::U;
+                            Vec::new()
+                        },
+                        Tuple(fields) => {
+                            shape = Shape::T;
+                            fields.into_iter().enumerate().
+                                map(|(i, f)| (format!("field_{}", i).into(), f.ty)).
+                                collect()
+                        },
+                        Struct(fields) => {
+                            shape = Shape::S;
+                            fields.into_iter().map(|f| {
+                            (f.ident.unwrap(), f.ty)
+                            }).collect()
+                        },
+                    };
+                    let exprs: Vec<_> = matchers.iter().map(|pair| {
+                        let id = &pair.0;
+                        let ty = &pair.1;
+                        match type_ident(ty) {
+                            None => quote!(),
+                            Some(ref type_ident) => {
+                                let f = mut_fold_fn_name(&type_ident);
+                                if all_types.contains(type_ident) {
+                                    quote!(self.#f(#id);)
+                                } else {
+                                    quote!()
+                                }
+                            }
+                        }
+                    }).collect();
+
+                    let pat_names = matchers.into_iter().map(|(x,_)| quote!( ref mut #x));
+                    let pattern = match shape {
+                        Shape::U => quote!(),
+                        Shape::T => quote!(
+                            ( #( #pat_names ),* )
+                        ),
+                        Shape::S => quote!(
+                            { #( #pat_names ),* }
+                        ),
+                    };
+
+                    quote! {
+                        self::#ty::#var_name #pattern => {#(
+                            #exprs
+                        )*}
+                    }
+                });
+
+                quote!(
+                    match *it {#(
+                        #match_arms
+                    )*}
+                )
             },
         };
         println!("{}", body);
+        let func_name = fold_fn_name(&def.ident);
+        let func_name_mut = mut_fold_fn_name(&def.ident);
+        let mut_mapper_name = mapper_fn_name(&def.ident);
         quote! {
-            fn #func_name(&mut self, it: &mut #ty){
+            fn #mut_mapper_name(&mut self, _it: &mut self::#ty){
+                // No effect by default.
+            }
+
+            #[allow(unused_variables)]
+            fn #func_name_mut(&mut self, it: &mut self::#ty){
+                self.#mut_mapper_name(it);
                 #body
+            }
+
+            fn #func_name(&mut self, mut it: self::#ty) -> self::#ty {
+                self.#func_name_mut(&mut it);
+                it
             }
         }
     }).collect::<Vec<_>>();
 
+    let module_name = parsed.name;
     let gen = quote! {
-        #(
-            #type_defs
-        )*
+        pub mod #module_name {
+            #![allow(non_snake_case)]
+            #(
+                #type_defs
+            )*
 
-        trait #trait_name {#(
-            #fold_functions
-        )*}
+            pub trait Folder {#(
+                #fold_functions
+            )*}
 
-        struct DefaultFolder;
-        impl #trait_name for DefaultFolder {}
-
+            pub struct IdentityFolder;
+            impl Folder for IdentityFolder {}
+        }
     };
 
     println!("{}", gen.as_ref());

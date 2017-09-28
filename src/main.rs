@@ -12,7 +12,7 @@
 extern crate folder_derive;
 extern crate pest;
 use errors::*;
-use folder_derive::foldable;
+use folder_derive::foldable_types;
 use parsers::Parseable;
 use util::*;
 
@@ -21,25 +21,28 @@ mod errors;
 mod multitree;
 mod parsers;
 
-foldable!{Testing,
-    #[derive(Debug)]
-    struct Test(usize, TestTwo);
-    #[derive(Debug)]
-    struct TestTwo {
-        a: i32
+foldable_types!{foldtest,
+    #[derive(Clone, Debug)]
+    pub struct TestStruct(pub usize, pub TestStructTwo);
+    #[derive(Clone, Debug)]
+    pub struct TestStructTwo {
+        pub a: i32
     }
-    #[derive(Debug)]
-    struct TestThree();
-    // enum Test {
-    //     A(i32),
-    //     B(::TestTwo, self::TestTwo)
-    // }
+    #[derive(Clone, Debug)]
+    pub struct TestStructThree();
 
-    // enum TestTwo {
-    //     C(bool,i32),
-    //     D(usize),
-    //     E()
-    // }
+    #[derive(Clone, Debug)]
+    pub enum TestEnum {
+        A(i32),
+        B(::foldtest::TestEnumTwo, self::TestStruct)
+    }
+
+    #[derive(Clone, Debug)]
+    pub enum TestEnumTwo {
+        C(bool,i32),
+        D(usize),
+        E,
+    }
 }
 
 fn main() {
@@ -67,26 +70,65 @@ fn run2() -> Res<()> {
 
 
 fn run() -> Res<()> {
-    use parsers::lisp::{LispProgram};
-    let it = "(f (h 1 2) (g 3 4 5))";
+    // use parsers::lisp::{LispProgram};
+    // let it = "(f (h 1 2) (g 3 4 5))";
     // dump!(it.parsed::<LispProgram>());
+    use foldtest::*;
+    let mut s1 = TestStruct(20, TestStructTwo{a: 3});
+    let mut s2 = TestStructTwo{a:4};
 
-    // let x = Test::A(5);
-    // let y = TestTwo::C(true, 2);
-    let mut x = Test(20, TestTwo{a: 3});
-    let mut y = TestTwo{a:4};
-    dump!(x);
-    DefaultFolder.fold_test(&mut x);
-    DefaultFolder.fold_testtwo(&mut y);
-    dump!(x);
+    let mut e1_1 = TestEnum::A(5);
+    let mut e2 = TestEnumTwo::C(true, 2);
+    let mut e1_2 = TestEnum::B(e2.clone(), s1.clone());
+
+
+    // dump!(s1);
+    // DefaultFolder.fold_teststruct(&mut s1);
+    // DefaultFolder.fold_teststructtwo(&mut s2);
+    // dump!(s1);
     struct IncFolder;
-    impl TestingFolder for IncFolder {
-        fn fold_testtwo(&mut self, it: &mut TestTwo) {
+    impl foldtest::Folder for IncFolder {
+        fn mut_fold_TestStructTwo(&mut self, it: &mut TestStructTwo) {
             it.a += 1;
         }
+        fn mut_map_TestStruct(&mut self, it: &mut TestStruct) {
+            it.0 += 10;
+        }
+        fn mut_fold_TestEnumTwo(&mut self, it: &mut TestEnumTwo) {
+            if let TestEnumTwo::C(_, ref mut n) = *it {
+                *n += 100
+            }
+        }
     }
-    IncFolder.fold_test(&mut x);
-    dump!(x);
+
+    // Start state
+    // [src/main.rs:105] e1_2: TestEnum = B(
+    //     C(
+    //         true,
+    //         2
+    //     ),
+    //     TestStruct(
+    //         20,
+    //         TestStructTwo {
+    //             a: 3
+    //         }
+    //     )
+    // ); 
+
+
+    dump!(e1_2);
+    dump!(e1_1.clone());
+
+    fn f(x: Box<u32>) -> Box<u32> {
+        x
+    }
+    dump!(f(Box::new(5)));
+
+    let new = IncFolder.fold_TestEnum(IncFolder.fold_TestEnum(e1_2));
+    dump!(new);
+
+    // IncFolder.fold_teststruct(&mut s1);
+    // dump!(s1);
 
     Ok(())
 }
