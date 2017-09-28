@@ -1,9 +1,11 @@
 #![feature(proc_macro)]
+#![feature(log_syntax)]
 #![recursion_limit = "1024"]
 #![feature(try_from)]
 #![feature(core_intrinsics)]
 #![allow(dead_code)]
 #![feature(trace_macros)]
+
 
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate pest_derive;
@@ -19,16 +21,16 @@ mod errors;
 mod multitree;
 mod parsers;
 
-foldable!{
+foldable!{Testing,
     enum Test {
         A(i32),
-        B(u32),
+        B(TestTwo, TestTwo)
     }
 
     enum TestTwo {
         C(bool,i32),
         D(usize),
-        E(),
+        E()
     }
 }
 
@@ -60,6 +62,11 @@ fn run() -> Res<()> {
     use parsers::lisp::{LispProgram};
     let it = "(f (h 1 2) (g 3 4 5))";
     dump!(it.parsed::<LispProgram>());
+
+    let x = Test::A(5);
+    let y = TestTwo::C(true, 2);
+    DefaultFolder.fold_test(x);
+    DefaultFolder.fold_testtwo(y);
 
     Ok(())
 }

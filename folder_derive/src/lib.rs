@@ -1,18 +1,47 @@
 #![feature(proc_macro)]
 
 extern crate proc_macro;
+extern crate case;
 extern crate syn;
 #[macro_use] extern crate quote;
-extern crate synom;
+#[macro_use] extern crate synom;
 
 use proc_macro::TokenStream;
+use syn::derive::parsing::derive_input;
 use syn::parse::IResult;
-use syn::derive::parsing::derive_inputs;
-use syn::{DeriveInput};
+use syn::{DeriveInput, Ident};
+use syn::ident::parsing::ident;
+use case::CaseExt;
 
-fn parse_many_derive_inputs(input: &str) -> Result<Vec<DeriveInput>, String> {
-    unwrap("derive inputs", derive_inputs, input)
+named!(foldable_input -> FoldableInput, do_parse!(
+    name: ident >>
+    punct!(",") >>
+    defs: many0!(derive_input) >>
+    (FoldableInput {
+        name: name,
+        defs: defs,
+    })
+));
+
+fn parse_foldable_input(input: &str) -> Result<FoldableInput, String> {
+    unwrap("derive inputs", foldable_input, input)
 }
+
+fn fold_fn_name(base: &Ident) -> Ident {
+    format!("fold_{}", base).to_lowercase().into()
+}
+
+fn folder_trait_name(folder_name: &Ident) -> Ident {
+    format!("{}Folder", folder_name.as_ref().to_capitalized()).into()
+}
+
+
+struct FoldableInput {
+    name: Ident,
+    defs: Vec<DeriveInput>,
+}
+
+
 
 #[proc_macro]
 pub fn foldable(input: TokenStream) -> TokenStream {
@@ -20,22 +49,35 @@ pub fn foldable(input: TokenStream) -> TokenStream {
     let s = input.to_string();
 
     // Parse the string representation
-    let ast: Vec<DeriveInput> = parse_many_derive_inputs(&s).unwrap();
+    let parsed: FoldableInput = parse_foldable_input(&s).unwrap();
+    let type_defs = parsed.defs;
 
+    let trait_name = folder_trait_name(&parsed.name);
     // Build the impl
-    let name = ast.iter().cloned().map(|t| t.ident).collect::<Vec<_>>();
+    let fold_functions = type_defs.iter().map(|def| {
+        let func_name = fold_fn_name(&def.ident);
+        let ty = &def.ident;
+        quote! {
+            fn #func_name(&mut self, it: #ty) {
+                println!("Hello from {}", stringify!(#func_name));
+            }
+        }
+    }).collect::<Vec<_>>();
     let gen = quote! {
         #(
-            #ast
+            #type_defs
         )*
-        fn print_names() {
-            #(
-                println!("macro generated");
-                println!("{}", stringify!(#name));
-            )*
-        }
+
+        trait #trait_name {#(
+            #fold_functions
+        )*}
+
+        struct DefaultFolder;
+        impl #trait_name for DefaultFolder {}
+
     };
 
+    println!("{}", gen.as_ref());
     gen.parse().unwrap()
 }
 

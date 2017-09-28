@@ -6,8 +6,6 @@ use pest::iterators::Pair;
 use pest::inputs::Input;
 use std::convert::TryFrom;
 
-
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum LispLit {
     I(i64),

@@ -40,7 +40,7 @@ pub use generics::{Generics, Lifetime, LifetimeDef, TraitBoundModifier, TyParam,
 #[cfg(feature = "printing")]
 pub use generics::{ImplGenerics, Turbofish, TyGenerics};
 
-mod ident;
+pub mod ident;
 pub use ident::Ident;
 
 #[cfg(feature = "full")]

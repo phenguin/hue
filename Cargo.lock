@@ -34,6 +34,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "case"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "cfg-if"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -69,6 +74,7 @@ dependencies = [
 name = "folder_derive"
 version = "0.1.0"
 dependencies = [
+ "case 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.11.11",
  "synom 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -162,6 +168,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [metadata]
 "checksum backtrace 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "72f9b4182546f4b04ebc4ab7f84948953a118bd6021a1b6a6c909e3e94f6be76"
 "checksum backtrace-sys 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "afccc5772ba333abccdf60d55200fa3406f8c59dcf54d5f7998c9107d3799c7c"
+"checksum case 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "999d98bcc230f149729a0c7c7689960a0fbdba70c099f54c478fb6caf9af14e3"
 "checksum cfg-if 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d4c819a1287eb618df47cc647173c5c4c66ba19d888a6e50d605672aed3140de"
 "checksum dbghelp-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "97590ba53bcb8ac28279161ca943a924d1fd4a8fb3fa63302591647c4fc5b850"
 "checksum dump 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2cdf33a83c5657a80b925bd6b340b9382e2a04c719df732b5d8c26b33bd2500a"

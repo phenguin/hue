@@ -38,7 +38,6 @@ pub mod parsing {
     use generics::parsing::generics;
     use ident::parsing::ident;
 
-    named!(pub derive_inputs -> Vec<DeriveInput>, many0!(derive_input));
 
     named!(pub derive_input -> DeriveInput, do_parse!(
         attrs: many0!(outer_attr) >>
