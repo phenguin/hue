@@ -11,7 +11,9 @@ use errors::*;
 pub trait Parseable {
     type Err;
     type Input: Input;
-    fn parsed<T>(&self) -> Result<T, Self::Err> where T: FromParse;
+    fn parsed<T>(&self) -> Result<T, Self::Err>
+    where
+        T: FromParse;
 }
 
 impl<T: AsRef<str>> Parseable for T {

@@ -46,23 +46,20 @@ impl<I: Input> TryFrom<Pair<Rule, I>> for LispLit {
                 let span = p.into_span();
                 match rule {
                     Rule::float => {
-                        span.as_str()
-                            .parse()
-                            .map(F)
-                            .chain_err(|| format!("Bad parse float parse: {}", span.as_str()))
+                        span.as_str().parse().map(F).chain_err(|| {
+                            format!("Bad parse float parse: {}", span.as_str())
+                        })
                     }
                     Rule::int => {
-                        span.as_str()
-                            .parse()
-                            .map(I)
-                            .chain_err(|| format!("Bad parse float parse: {}", span.as_str()))
+                        span.as_str().parse().map(I).chain_err(|| {
+                            format!("Bad parse float parse: {}", span.as_str())
+                        })
                     }
                     Rule::string => Ok(S(span.as_str().to_owned())),
                     Rule::boolean => {
-                        span.as_str()
-                            .parse()
-                            .map(B)
-                            .chain_err(|| format!("Bad parse float parse: {}", span.as_str()))
+                        span.as_str().parse().map(B).chain_err(|| {
+                            format!("Bad parse float parse: {}", span.as_str())
+                        })
                     }
                     _ => bail!("Line {} -- Unexpected: ({:#?}){:#?}", line!(), rule, span),
                 }
