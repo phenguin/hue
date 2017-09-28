@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 
 
 
-#[derive(Debug, Clone, PartialEq, HelloWorld)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LispLit {
     I(i64),
     F(f64),

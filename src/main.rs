@@ -1,35 +1,36 @@
+#![feature(proc_macro)]
 #![recursion_limit = "1024"]
 #![feature(try_from)]
 #![feature(core_intrinsics)]
 #![allow(dead_code)]
 #![feature(trace_macros)]
 
-mod parsers;
-
-#[macro_use]
-mod folder;
-mod errors;
-mod multitree;
-
-#[macro_use]
-mod util;
-
+#[macro_use] extern crate error_chain;
+#[macro_use] extern crate pest_derive;
+extern crate folder_derive;
+extern crate pest;
+use errors::*;
+use folder_derive::foldable;
 use parsers::Parseable;
-
 use util::*;
 
-extern crate pest;
+#[macro_use] mod util;
+mod errors;
+mod multitree;
+mod parsers;
 
-#[macro_use]
-extern crate folder_derive;
+foldable!{
+    enum Test {
+        A(i32),
+        B(u32),
+    }
 
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate pest_derive;
-
-use errors::*;
+    enum TestTwo {
+        C(bool,i32),
+        D(usize),
+        E(),
+    }
+}
 
 fn main() {
     if let Err(ref e) = run() {
@@ -54,24 +55,11 @@ fn run2() -> Res<()> {
     Ok(())
 }
 
+
 fn run() -> Res<()> {
-    use parsers::lisp::{LispProgram, LispLit};
+    use parsers::lisp::{LispProgram};
     let it = "(f (h 1 2) (g 3 4 5))";
     dump!(it.parsed::<LispProgram>());
-
-    // folder!(testing,
-    //     enum Test fold_test {
-    //     A(i32),
-    //     B(u32)
-    //     }
-    //     enum TestTwo fold_testtwo {
-    //         C(bool,i32),
-    //         D(usize),
-    //         E()
-                
-    //     }
-    // );
-    LispLit::hello_world();
 
     Ok(())
 }
