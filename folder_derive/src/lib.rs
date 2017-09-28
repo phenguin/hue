@@ -83,7 +83,6 @@ pub fn foldable_types(input: TokenStream) -> TokenStream {
 
     let field_adjustors = |var_data| {
         use VariantData::*;
-        println!("{:?}", var_data);
         let pairs: Vec<(Ident,Ty)> = match var_data {
             Unit => Vec::new(), 
             Tuple(fields) => (0..fields.len()).
@@ -173,7 +172,6 @@ pub fn foldable_types(input: TokenStream) -> TokenStream {
                 )
             },
         };
-        println!("{}", body);
         let func_name = fold_fn_name(&def.ident);
         let func_name_mut = mut_fold_fn_name(&def.ident);
         let mut_mapper_name = mapper_fn_name(&def.ident);
@@ -212,7 +210,6 @@ pub fn foldable_types(input: TokenStream) -> TokenStream {
         }
     };
 
-    println!("{}", gen.as_ref());
     gen.parse().expect("quote lib generated some garbage.")
 }
 
