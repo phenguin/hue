@@ -9,3 +9,5 @@ error-chain = "*"
 pest_derive = "^1.0.0-beta"
 dump = "*"
 either = "*"
+folder_derive = { path = "folder_derive" }
+

@@ -2,8 +2,12 @@
 #![feature(try_from)]
 #![feature(core_intrinsics)]
 #![allow(dead_code)]
+#![feature(trace_macros)]
 
 mod parsers;
+
+#[macro_use]
+mod folder;
 mod errors;
 mod multitree;
 
@@ -15,6 +19,9 @@ use parsers::Parseable;
 use util::*;
 
 extern crate pest;
+
+#[macro_use]
+extern crate folder_derive;
 
 #[macro_use]
 extern crate error_chain;
@@ -48,8 +55,23 @@ fn run2() -> Res<()> {
 }
 
 fn run() -> Res<()> {
-    use parsers::lisp::LispProgram;
+    use parsers::lisp::{LispProgram, LispLit};
     let it = "(f (h 1 2) (g 3 4 5))";
     dump!(it.parsed::<LispProgram>());
+
+    // folder!(testing,
+    //     enum Test fold_test {
+    //     A(i32),
+    //     B(u32)
+    //     }
+    //     enum TestTwo fold_testtwo {
+    //         C(bool,i32),
+    //         D(usize),
+    //         E()
+                
+    //     }
+    // );
+    LispLit::hello_world();
+
     Ok(())
 }
