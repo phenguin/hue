@@ -22,16 +22,24 @@ mod multitree;
 mod parsers;
 
 foldable!{Testing,
-    enum Test {
-        A(i32),
-        B(TestTwo, TestTwo)
+    #[derive(Debug)]
+    struct Test(usize, TestTwo);
+    #[derive(Debug)]
+    struct TestTwo {
+        a: i32
     }
+    #[derive(Debug)]
+    struct TestThree();
+    // enum Test {
+    //     A(i32),
+    //     B(::TestTwo, self::TestTwo)
+    // }
 
-    enum TestTwo {
-        C(bool,i32),
-        D(usize),
-        E()
-    }
+    // enum TestTwo {
+    //     C(bool,i32),
+    //     D(usize),
+    //     E()
+    // }
 }
 
 fn main() {
@@ -61,12 +69,24 @@ fn run2() -> Res<()> {
 fn run() -> Res<()> {
     use parsers::lisp::{LispProgram};
     let it = "(f (h 1 2) (g 3 4 5))";
-    dump!(it.parsed::<LispProgram>());
+    // dump!(it.parsed::<LispProgram>());
 
-    let x = Test::A(5);
-    let y = TestTwo::C(true, 2);
-    DefaultFolder.fold_test(x);
-    DefaultFolder.fold_testtwo(y);
+    // let x = Test::A(5);
+    // let y = TestTwo::C(true, 2);
+    let mut x = Test(20, TestTwo{a: 3});
+    let mut y = TestTwo{a:4};
+    dump!(x);
+    DefaultFolder.fold_test(&mut x);
+    DefaultFolder.fold_testtwo(&mut y);
+    dump!(x);
+    struct IncFolder;
+    impl TestingFolder for IncFolder {
+        fn fold_testtwo(&mut self, it: &mut TestTwo) {
+            it.a += 1;
+        }
+    }
+    IncFolder.fold_test(&mut x);
+    dump!(x);
 
     Ok(())
 }
