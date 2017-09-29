@@ -1,8 +1,13 @@
+#![feature(conservative_impl_trait)]
+#![feature(specialization)]
+#![feature(optin_builtin_traits)]
 #![feature(proc_macro)]
 #![allow(unused_imports)]
 extern crate folder_derive;
 
 use folder_derive::foldable_types;
+use std::marker::PhantomData;
+use std::iter::{self,IntoIterator,Iterator};
 
 // foldable_types!{
 //     foldtest,
@@ -31,9 +36,9 @@ use folder_derive::foldable_types;
 
 
 foldable_types!{test_inc,
-                #[derive(Eq, PartialEq)]
+                // #[derive(Eq, PartialEq)]
                 pub struct S1{pub prim: u32, pub sub: S2}
-                #[derive(Eq, PartialEq)]
+                // #[derive(Eq, PartialEq)]
                 pub struct S2(pub u32);
 }
 
@@ -54,4 +59,47 @@ fn test_inc() {
         sub: S2(0),
     };
     assert_eq!(x.sub.0 + 1, IncFolder.fold_S1(x).sub.0);
+}
+
+#[test]
+fn test_tmp() {
+    // let mut x = Box::new(5);
+    // let _ = (&mut x).into_iter();
+
+    struct MutIterWrapper<T, U> {inner:T, _item: PhantomData<U>};
+    struct UnitWrapper<T>{inner:T};
+
+    impl<T, U> MutIterWrapper<T, U> {
+        fn new(x: T) -> Self {
+            Self {
+                inner: x,
+                _item:PhantomData,
+            }
+        }
+    }
+
+    impl<'a, T> IntoIterator for &'a mut UnitWrapper<T> {
+        type Item = &'a mut T;
+        type IntoIter = iter::Once<&'a mut T>;
+        fn into_iter(self) -> Self::IntoIter {
+            iter::once(&mut self.inner)
+        }
+    }
+
+    impl<'a, U, T> IntoIterator for &'a mut MutIterWrapper<T, U>
+    where &'a mut T: IntoIterator<Item=&'a mut U>{
+        type Item = &'a mut U;
+        type IntoIter = <&'a mut T as IntoIterator>::IntoIter;
+        fn into_iter(self) -> Self::IntoIter {
+            (&mut self.inner).into_iter()
+        }
+    }
+
+    let mut x = MutIterWrapper::<Vec<u32>, u32> {
+        inner: vec![5],
+        _item: PhantomData,
+    };
+
+    assert_eq!(0, 1);
+
 }
