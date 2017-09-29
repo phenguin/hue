@@ -67,6 +67,7 @@ fn test_tmp() {
     // let _ = (&mut x).into_iter();
 
     struct MutIterWrapper<T, U> {inner:T, _item: PhantomData<U>};
+    #[derive(Debug)]
     struct UnitWrapper<T>{inner:T};
 
     impl<T, U> MutIterWrapper<T, U> {
@@ -78,11 +79,12 @@ fn test_tmp() {
         }
     }
 
-    impl<'a, T> IntoIterator for &'a mut UnitWrapper<T> {
-        type Item = &'a mut T;
-        type IntoIter = iter::Once<&'a mut T>;
+    use std::ops::{Deref, DerefMut};
+    impl<'a, U: 'a, T: 'a + Deref<Target=U> + DerefMut> IntoIterator for &'a mut UnitWrapper<T> {
+        type Item = &'a mut U;
+        type IntoIter = iter::Once<&'a mut U>;
         fn into_iter(self) -> Self::IntoIter {
-            iter::once(&mut self.inner)
+            iter::once((&mut self.inner).deref_mut())
         }
     }
 
@@ -95,11 +97,17 @@ fn test_tmp() {
         }
     }
 
-    let mut x = MutIterWrapper::<Vec<u32>, u32> {
-        inner: vec![5],
-        _item: PhantomData,
+    fn test() {
+    let mut x = UnitWrapper::<Box<u32>> {
+        inner: Box::new(5),
     };
 
+    println!("{:?}", x);
+    (&mut x).into_iter().for_each(|x| *x += 10);
+    println!("{:?}", x);
+
     assert_eq!(0, 1);
+    }
+    test();
 
 }
